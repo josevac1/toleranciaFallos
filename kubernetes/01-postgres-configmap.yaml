@@ -1,0 +1,24 @@
+﻿apiVersion: v1
+data:
+  init.sql: "CREATE TABLE IF NOT EXISTS events (\r\n    id SERIAL PRIMARY KEY,\r\n
+    \   name VARCHAR(150) NOT NULL,\r\n    event_date TIMESTAMP,\r\n    created_at
+    TIMESTAMP DEFAULT CURRENT_TIMESTAMP\r\n);\r\n\r\nCREATE TABLE IF NOT EXISTS inventory
+    (\r\n    event_id INTEGER PRIMARY KEY,\r\n    available_seats INTEGER NOT NULL
+    CHECK (available_seats >= 0),\r\n    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\r\n\r\n
+    \   CONSTRAINT fk_inventory_event\r\n        FOREIGN KEY (event_id)\r\n        REFERENCES
+    events(id)\r\n        ON DELETE CASCADE\r\n);\r\n\r\nCREATE TABLE IF NOT EXISTS
+    reservations (\r\n    id UUID PRIMARY KEY,\r\n    user_id VARCHAR(100) NOT NULL,\r\n
+    \   event_id INTEGER NOT NULL,\r\n    email VARCHAR(150) NOT NULL,\r\n    amount
+    NUMERIC(10, 2) NOT NULL,\r\n    payment_id UUID,\r\n    status VARCHAR(50) NOT
+    NULL,\r\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\r\n\r\n    CONSTRAINT
+    fk_reservation_event\r\n        FOREIGN KEY (event_id)\r\n        REFERENCES events(id)\r\n);\r\n\r\nINSERT
+    INTO events (\r\n    id,\r\n    name,\r\n    event_date\r\n)\r\nVALUES (\r\n    1,\r\n
+    \   'Concierto Sistemas Distribuidos 2026',\r\n    '2026-08-15 19:00:00'\r\n)\r\nON
+    CONFLICT (id) DO NOTHING;\r\n\r\nINSERT INTO inventory (\r\n    event_id,\r\n
+    \   available_seats\r\n)\r\nVALUES (\r\n    1,\r\n    10\r\n)\r\nON CONFLICT (event_id)
+    DO NOTHING;\r\n\r\nSELECT setval(\r\n    pg_get_serial_sequence('events', 'id'),\r\n
+    \   COALESCE((SELECT MAX(id) FROM events), 1)\r\n);"
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: tickets

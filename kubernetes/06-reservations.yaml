@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reservations
+  namespace: tickets
+  labels:
+    app: reservations
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: reservations
+
+  template:
+    metadata:
+      labels:
+        app: reservations
+
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          minDomains: 2
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: reservations
+
+      containers:
+        - name: reservations
+          image: tickets-reservations:1.0.0
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 8000
+
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-database-secret
+                  key: DATABASE_URL
+
+            - name: INVENTORY_URL
+              value: "http://inventory-service:8000"
+
+            - name: PAYMENTS_URL
+              value: "http://payments-service:8000"
+
+            - name: NOTIFICATIONS_URL
+              value: "http://notifications-service:8000"
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 6
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reservations-service
+  namespace: tickets
+
+spec:
+  type: ClusterIP
+
+  selector:
+    app: reservations
+
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
