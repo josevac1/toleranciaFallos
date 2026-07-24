@@ -11,6 +11,8 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 COPY main.py .
+COPY circuit_breaker.py .
+COPY notification_retry.py .
 
 EXPOSE 8000
 

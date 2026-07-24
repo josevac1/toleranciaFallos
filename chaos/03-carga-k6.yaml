@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-load-script
+  namespace: tickets
+  labels:
+    app: k6-load
+data:
+  test.js: |
+    import http from "k6/http";
+    import { check, sleep } from "k6";
+
+    export const options = {
+      stages: [
+        { duration: "5s", target: 10 },
+        { duration: "20s", target: 20 },
+        { duration: "5s", target: 0 }
+      ]
+    };
+
+    export default function () {
+      const response = http.get(
+        "http://gateway-service:8000/api/inventory/1",
+        {
+          tags: {
+            endpoint: "inventario-gateway"
+          }
+        }
+      );
+
+      check(response, {
+        "respuesta HTTP 200": (r) => r.status === 200,
+        "respuesta contiene event_id": (r) =>
+          r.body.includes("event_id")
+      });
+
+      sleep(0.1);
+    }
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-load
+  namespace: tickets
+  labels:
+    app: k6-load
+spec:
+  backoffLimit: 0
+
+  template:
+    metadata:
+      labels:
+        app: k6-load
+
+    spec:
+      restartPolicy: Never
+
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - k6
+
+          args:
+            - run
+            - /scripts/test.js
+
+          volumeMounts:
+            - name: k6-script
+              mountPath: /scripts
+              readOnly: true
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+      volumes:
+        - name: k6-script
+          configMap:
+            name: k6-load-script

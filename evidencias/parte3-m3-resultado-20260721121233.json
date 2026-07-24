@@ -1,0 +1,13 @@
+﻿{
+    "status":  "CONFIRMED_NOTIFICATION_PENDING",
+    "reservation_id":  "d2bfa8f5-ec0f-4512-8c65-df2de874769d",
+    "payment_id":  "b8d7b739-2245-459f-b486-3070ff35669d",
+    "event_id":  1,
+    "notification_sent":  false,
+    "notification_attempts":  3,
+    "notification_fallback_used":  true,
+    "notification_last_error":  "Error de conexiÃ³n con Notificaciones: All connection attempts failed",
+    "notification_last_status_code":  null,
+    "database_status_updated":  true,
+    "request_id":  "e7251d5b-f663-4587-9157-4b3854a8adb2"
+}

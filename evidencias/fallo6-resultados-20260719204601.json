@@ -1,0 +1,24 @@
+﻿[
+    {
+        "solicitud":  1,
+        "exitosa":  true,
+        "estado":  "CONFIRMED",
+        "reservationId":  "d6ba9bd5-e587-4e3d-97bb-c4da35d2f84d",
+        "segundos":  2.125,
+        "error":  "",
+        "PSComputerName":  "localhost",
+        "RunspaceId":  "8122315f-5965-4ea7-87d0-362a5543ed6c",
+        "PSShowComputerName":  false
+    },
+    {
+        "solicitud":  2,
+        "exitosa":  false,
+        "estado":  "ERROR",
+        "reservationId":  "",
+        "segundos":  0.593,
+        "error":  "Error en el servidor remoto: (409) Conflicto.",
+        "PSComputerName":  "localhost",
+        "RunspaceId":  "fcb25ea9-b32b-4a1c-8e95-201b576fdd2e",
+        "PSShowComputerName":  false
+    }
+]

@@ -1,0 +1,24 @@
+﻿[
+    {
+        "solicitud":  1,
+        "exitosa":  false,
+        "estado":  "ERROR",
+        "reservationId":  "",
+        "segundos":  5.075,
+        "error":  "Error en el servidor remoto: (504) Tiempo de espera agotado para la puerta de enlace.",
+        "PSComputerName":  "localhost",
+        "RunspaceId":  "f3b87f08-fe7d-473b-a3f2-b354aa063b82",
+        "PSShowComputerName":  false
+    },
+    {
+        "solicitud":  2,
+        "exitosa":  false,
+        "estado":  "ERROR",
+        "reservationId":  "",
+        "segundos":  0.079,
+        "error":  "Error en el servidor remoto: (409) Conflicto.",
+        "PSComputerName":  "localhost",
+        "RunspaceId":  "7edfebfb-5f89-46ec-bcb3-e9291ca1e157",
+        "PSShowComputerName":  false
+    }
+]

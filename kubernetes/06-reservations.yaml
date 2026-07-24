@@ -5,6 +5,7 @@ metadata:
   namespace: tickets
   labels:
     app: reservations
+    resilience-pattern: circuit-breaker-retry-fallback
 
 spec:
   replicas: 2
@@ -17,6 +18,7 @@ spec:
     metadata:
       labels:
         app: reservations
+        resilience-pattern: circuit-breaker-retry-fallback
 
     spec:
       topologySpreadConstraints:
@@ -30,7 +32,7 @@ spec:
 
       containers:
         - name: reservations
-          image: tickets-reservations:1.0.0
+          image: tickets-reservations:1.2.0
           imagePullPolicy: IfNotPresent
 
           ports:
@@ -53,10 +55,34 @@ spec:
             - name: NOTIFICATIONS_URL
               value: "http://notifications-service:8000"
 
+            # Circuit Breaker de Pagos
+            - name: PAYMENT_TIMEOUT_SECONDS
+              value: "3"
+
+            - name: PAYMENT_CB_FAILURE_THRESHOLD
+              value: "2"
+
+            - name: PAYMENT_CB_RECOVERY_SECONDS
+              value: "15"
+
+            # Retries de Notificaciones
+            - name: NOTIFICATION_TIMEOUT_SECONDS
+              value: "2"
+
+            - name: NOTIFICATION_MAX_ATTEMPTS
+              value: "3"
+
+            - name: NOTIFICATION_INITIAL_BACKOFF_SECONDS
+              value: "1"
+
+            - name: NOTIFICATION_MAX_BACKOFF_SECONDS
+              value: "4"
+
           readinessProbe:
             httpGet:
               path: /health
               port: 8000
+
             initialDelaySeconds: 3
             periodSeconds: 5
             timeoutSeconds: 3
@@ -66,6 +92,7 @@ spec:
             httpGet:
               path: /health
               port: 8000
+
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 3
@@ -86,6 +113,8 @@ kind: Service
 metadata:
   name: reservations-service
   namespace: tickets
+  labels:
+    app: reservations
 
 spec:
   type: ClusterIP

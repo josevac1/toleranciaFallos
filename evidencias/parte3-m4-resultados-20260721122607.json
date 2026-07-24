@@ -1,0 +1,26 @@
+﻿[
+    {
+        "solicitud":  1,
+        "exitosa":  true,
+        "http":  200,
+        "estado":  "CONFIRMED",
+        "reservationId":  "3d9c01f8-fe20-46c3-be10-8dcb0c638029",
+        "segundos":  1.871,
+        "error":  "",
+        "PSComputerName":  "localhost",
+        "RunspaceId":  "9adca4c7-9c61-40c0-97b3-a8e949deaf15",
+        "PSShowComputerName":  false
+    },
+    {
+        "solicitud":  2,
+        "exitosa":  false,
+        "http":  409,
+        "estado":  "SOLD_OUT",
+        "reservationId":  "",
+        "segundos":  1.615,
+        "error":  "No existen asientos disponibles",
+        "PSComputerName":  "localhost",
+        "RunspaceId":  "9fa4f7c2-c270-43db-beca-5824a78944ce",
+        "PSShowComputerName":  false
+    }
+]

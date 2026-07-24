@@ -57,3 +57,4 @@ SELECT setval(
     pg_get_serial_sequence('events', 'id'),
     COALESCE((SELECT MAX(id) FROM events), 1)
 );
+

@@ -1,0 +1,43 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: inventory-pdb
+  namespace: tickets
+  labels:
+    app: inventory
+    resilience-pattern: redundancy
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: inventory
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: reservations-pdb
+  namespace: tickets
+  labels:
+    app: reservations
+    resilience-pattern: redundancy
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: reservations
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: gateway-pdb
+  namespace: tickets
+  labels:
+    app: gateway
+    resilience-pattern: redundancy
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: gateway
