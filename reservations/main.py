@@ -1,6 +1,7 @@
 import logging
 import math
 import os
+import time
 import uuid
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -67,6 +68,13 @@ PAYMENTS_URL = os.getenv(
 NOTIFICATIONS_URL = os.getenv(
     "NOTIFICATIONS_URL",
     "http://notifications-service:8000",
+)
+
+DATABASE_MAX_ATTEMPTS = int(
+    os.getenv("DATABASE_MAX_ATTEMPTS", "3")
+)
+DATABASE_INITIAL_BACKOFF_SECONDS = float(
+    os.getenv("DATABASE_INITIAL_BACKOFF_SECONDS", "0.2")
 )
 
 
@@ -183,6 +191,30 @@ class ReservationRequest(BaseModel):
     )
 
 
+def connect_database():
+    """Conecta a PostgreSQL con reintentos limitados y backoff."""
+
+    for attempt in range(1, DATABASE_MAX_ATTEMPTS + 1):
+        try:
+            return psycopg.connect(
+                DATABASE_URL,
+                connect_timeout=2,
+            )
+        except psycopg.OperationalError:
+            if attempt >= DATABASE_MAX_ATTEMPTS:
+                raise
+            backoff = DATABASE_INITIAL_BACKOFF_SECONDS * (
+                2 ** (attempt - 1)
+            )
+            logging.warning(
+                "database_retry attempt=%s/%s backoff_seconds=%.2f",
+                attempt,
+                DATABASE_MAX_ATTEMPTS,
+                backoff,
+            )
+            time.sleep(backoff)
+
+
 # ============================================================
 # ENDPOINTS DE ESTADO
 # ============================================================
@@ -244,9 +276,7 @@ def save_reservation(
     Guarda una nueva reserva en PostgreSQL.
     """
 
-    with psycopg.connect(
-        DATABASE_URL
-    ) as connection:
+    with connect_database() as connection:
 
         with connection.cursor() as cursor:
             cursor.execute(
@@ -295,9 +325,7 @@ def update_reservation_status(
     Actualiza el estado de una reserva ya creada.
     """
 
-    with psycopg.connect(
-        DATABASE_URL
-    ) as connection:
+    with connect_database() as connection:
 
         with connection.cursor() as cursor:
             cursor.execute(

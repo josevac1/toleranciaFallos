@@ -44,6 +44,15 @@ spec:
             - name: INVENTORY_URL
               value: "http://inventory-service:8000"
 
+            - name: RATE_LIMIT_REQUESTS_PER_SECOND
+              value: "25"
+
+            - name: RATE_LIMIT_BURST
+              value: "40"
+
+            - name: MAX_CONCURRENT_REQUESTS
+              value: "20"
+
           readinessProbe:
             httpGet:
               path: /health

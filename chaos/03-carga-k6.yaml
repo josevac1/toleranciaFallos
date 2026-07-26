@@ -29,9 +29,13 @@ data:
       );
 
       check(response, {
-        "respuesta HTTP 200": (r) => r.status === 200,
-        "respuesta contiene event_id": (r) =>
-          r.body.includes("event_id")
+        "respuesta controlada": (r) =>
+          [200, 429, 503].includes(r.status),
+        "HTTP 200 contiene event_id": (r) =>
+          r.status !== 200 || r.body.includes("event_id"),
+        "sobrecarga incluye Retry-After": (r) =>
+          ![429, 503].includes(r.status) ||
+          r.headers["Retry-After"] !== undefined
       });
 
       sleep(0.1);

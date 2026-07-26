@@ -128,7 +128,8 @@ sistema-entradas/
 │   ├── 04-payments.yaml
 │   ├── 05-notifications.yaml
 │   ├── 06-reservations.yaml
-│   └── 07-gateway.yaml
+│   ├── 07-gateway.yaml
+│   └── 08-resilience-policies.yaml
 ├── notifications/
 │   ├── main.py
 │   ├── requirements.txt
@@ -253,6 +254,7 @@ kubectl apply -f .\kubernetes\04-payments.yaml
 kubectl apply -f .\kubernetes\05-notifications.yaml
 kubectl apply -f .\kubernetes\06-reservations.yaml
 kubectl apply -f .\kubernetes\07-gateway.yaml
+kubectl apply -f .\kubernetes\08-resilience-policies.yaml
 ```
 
 ---
@@ -471,7 +473,7 @@ kubectl exec -n tickets $postgresPod -- `
 Todas las capturas incluidas en la carpeta `evidencias` se muestran en las secciones desplegables siguientes.
 
 <details>
-<summary><strong>Pruebas locales y construcción inicial (11 imágenes)</strong></summary>
+<summary><strong>Pruebas locales y construcción inicial (10 imágenes)</strong></summary>
 
 <br>
 
@@ -484,11 +486,6 @@ Todas las capturas incluidas en la carpeta `evidencias` se muestran en las secci
 
 <p align="center">
   <img src="evidencias/02_paso1_pagos_fallo_simulado_swagger.png" alt="Paso 1 Pagos fallo simulado Swagger" width="950">
-</p>
-### Paso 1 Pagos aprobado PowerShell
-
-<p align="center">
-  <img src="evidencias/03_paso1_pagos_aprobado_powershell.png" alt="Paso 1 Pagos aprobado PowerShell" width="950">
 </p>
 ### Paso 1 Pagos logs fallos y éxitos local
 
@@ -534,7 +531,7 @@ Todas las capturas incluidas en la carpeta `evidencias` se muestran en las secci
 </details>
 
 <details>
-<summary><strong>PostgreSQL y almacenamiento en Kubernetes (19 imágenes)</strong></summary>
+<summary><strong>PostgreSQL y almacenamiento en Kubernetes (17 imágenes)</strong></summary>
 
 <br>
 
@@ -542,16 +539,6 @@ Todas las capturas incluidas en la carpeta `evidencias` se muestran en las secci
 
 <p align="center">
   <img src="evidencias/12_paso2_versiones_docker_minikube_kubectl.png" alt="Paso 2 versiones docker minikube kubectl" width="950">
-</p>
-### Paso 2 error minikube icacls ruta personalizada
-
-<p align="center">
-  <img src="evidencias/13_paso2_error_minikube_icacls_ruta_personalizada.png" alt="Paso 2 error minikube icacls ruta personalizada" width="950">
-</p>
-### Paso 2 reintento minikube y error icacls
-
-<p align="center">
-  <img src="evidencias/14_paso2_reintento_minikube_y_error_icacls.png" alt="Paso 2 reintento minikube y error icacls" width="950">
 </p>
 ### Paso 2 manifiestos PostgreSQL en Visual Studio Code
 
@@ -907,3 +894,118 @@ minikube delete -p tickets-cluster
 ---
 
 > Las credenciales incluidas en los manifiestos se utilizan únicamente en un entorno académico local.
+
+---
+
+## 20. Trazabilidad de las Partes II, III, IV y V
+
+### Catálogo de los seis fallos
+
+| N.º | Escenario | Mecanismo de inyección | Tratamiento |
+|---:|---|---|---|
+| 1 | Inventario Fantasma | Eliminación controlada de un pod de Inventario | Implementado en Parte III |
+| 2 | Pasarela Lenta | Pagos configurado con una latencia de 20 segundos | Implementado en Parte III |
+| 3 | Diluvio de Peticiones | Job de carga con k6 | Implementado en Parte III |
+| 4 | Base de Datos Intermitente | `postgres-service` temporalmente sin endpoints | Implementado en Parte III |
+| 5 | Correo Perdido | Notificaciones escalado a cero réplicas | Analizado en Parte V |
+| 6 | Condición de Carrera | Dos clientes concurrentes sobre el último asiento | Analizado en Parte V |
+
+Los scripts de inyección se encuentran en [`chaos`](chaos). Los fallos 1, 2, 3
+y 4 corresponden a las cuatro demostraciones oficiales de la Parte III. Los
+fallos 5 y 6 son los dos escenarios desarrollados teóricamente en la Parte V.
+
+### Cuatro mecanismos implementados en la Parte III
+
+| Fallo | Defensa y justificación | Resultado observado | Evidencia principal |
+|---|---|---|---|
+| Inventario Fantasma | Dos réplicas, distribución entre nodos, probes, PDB y autorrecuperación. Se eligió redundancia porque la causa es la pérdida de una instancia. | Una réplica continúa atendiendo y Kubernetes crea el reemplazo. | `evidencias/parte3-m1-*` |
+| Pasarela Lenta | Timeout, Circuit Breaker y compensación de inventario. Se eligió aislamiento porque una dependencia lenta no debe retener todos los recursos de Reservas. | Después de dos timeouts el circuito se abre y las llamadas siguientes reciben un rechazo inmediato. | `evidencias/parte3-m2-*` |
+| Diluvio de Peticiones | Token bucket, límite de concurrencia y HPA. Se eligió control de admisión porque aceptar carga ilimitada produciría colas y fallos en cascada. | El exceso recibe `429` o `503` controlado y las solicitudes admitidas conservan capacidad. | `chaos/03-carga-k6.yaml` y endpoint `/resilience/overload` |
+| Base de Datos Intermitente | Tres intentos de conexión con backoff y timeout corto. Se eligieron retries limitados porque el fallo simulado elimina temporalmente los endpoints de PostgreSQL. | La operación se recupera si vuelve la conexión durante la ventana; de lo contrario responde `503 DATABASE_ERROR`. | `chaos/04-base-datos-intermitente.ps1` y logs `database_retry` |
+
+Comandos de demostración:
+
+```powershell
+.\chaos\01-inventario-fantasma.ps1
+.\chaos\parte3-02-circuit-breaker-pagos.ps1
+kubectl apply -f .\chaos\03-carga-k6.yaml
+.\chaos\04-base-datos-intermitente.ps1 -Accion activar
+```
+
+### Capturas pendientes de los fallos 3 y 4
+
+Para completar la evidencia de la Parte III, tomar una captura después de
+ejecutar cada bloque y guardarla con el nombre sugerido.
+
+**Fallo 3 — Diluvio de Peticiones**
+
+1. Estado inicial del Gateway y del HPA:
+
+```powershell
+kubectl get pods -n tickets -l app=gateway -o wide
+kubectl get hpa gateway-hpa -n tickets
+```
+
+Nombre sugerido: `evidencias/parte3-m3-gateway-hpa-antes.png`.
+
+2. Resultado del pico de carga:
+
+```powershell
+kubectl delete job k6-load -n tickets --ignore-not-found
+kubectl apply -f .\chaos\03-carga-k6.yaml
+kubectl logs -n tickets job/k6-load -f
+```
+
+Nombre sugerido: `evidencias/parte3-m3-resultados-k6.png`.
+
+3. Estado de la protección y escalado después de la carga:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:18000/resilience/overload
+kubectl get hpa gateway-hpa -n tickets
+kubectl get pods -n tickets -l app=gateway -o wide
+```
+
+Nombre sugerido: `evidencias/parte3-m3-proteccion-y-hpa.png`.
+
+**Fallo 4 — Base de Datos Intermitente**
+
+1. Estado normal de PostgreSQL:
+
+```powershell
+.\chaos\04-base-datos-intermitente.ps1 -Accion estado
+```
+
+Nombre sugerido: `evidencias/parte3-m4-postgresql-antes.png`.
+
+2. Service sin endpoints:
+
+```powershell
+.\chaos\04-base-datos-intermitente.ps1 -Accion activar
+```
+
+Nombre sugerido: `evidencias/parte3-m4-postgresql-sin-endpoints.png`.
+
+3. Reintentos y error controlado:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:18000/api/inventory/1
+kubectl logs -n tickets deployment/inventory --tail=100 | Select-String "database_retry|DATABASE_ERROR"
+kubectl logs -n tickets deployment/reservations --tail=100 | Select-String "database_retry|DATABASE_ERROR"
+```
+
+Nombre sugerido: `evidencias/parte3-m4-reintentos-controlados.png`.
+
+4. Recuperación del Service:
+
+```powershell
+.\chaos\04-base-datos-intermitente.ps1 -Accion restaurar
+Invoke-RestMethod http://127.0.0.1:18000/api/inventory/1
+```
+
+Nombre sugerido: `evidencias/parte3-m4-postgresql-recuperado.png`.
+
+
+## Conclusión
+
+El análisis de los seis escenarios de fallo permitió comprobar que la tolerancia a fallos no consiste en evitar completamente los errores, sino en preparar al sistema para detectarlos, limitar su impacto y responder de manera controlada. En este proyecto se aplicaron mecanismos como redundancia y autorrecuperación para Inventario, timeout y Circuit Breaker para Pagos, control de carga para el Gateway, reintentos limitados para PostgreSQL, fallback para Notificaciones y operaciones atómicas para evitar condiciones de carrera. Gracias a estas defensas, el sistema puede continuar funcionando total o parcialmente, recuperarse automáticamente, aislar dependencias problemáticas y proteger la consistencia de los datos, demostrando así que la arquitectura desplegada sobre Kubernetes cumple con los principios de tolerancia a fallos y resiliencia.

@@ -55,6 +55,13 @@ spec:
             - name: NOTIFICATIONS_URL
               value: "http://notifications-service:8000"
 
+            # Resiliencia ante conectividad intermitente con PostgreSQL
+            - name: DATABASE_MAX_ATTEMPTS
+              value: "3"
+
+            - name: DATABASE_INITIAL_BACKOFF_SECONDS
+              value: "0.2"
+
             # Circuit Breaker de Pagos
             - name: PAYMENT_TIMEOUT_SECONDS
               value: "3"

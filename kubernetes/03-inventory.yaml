@@ -53,6 +53,12 @@ spec:
                   name: app-database-secret
                   key: DATABASE_URL
 
+            - name: DATABASE_MAX_ATTEMPTS
+              value: "3"
+
+            - name: DATABASE_INITIAL_BACKOFF_SECONDS
+              value: "0.2"
+
           readinessProbe:
             httpGet:
               path: /health

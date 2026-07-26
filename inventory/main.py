@@ -44,6 +44,13 @@ DATABASE_URL = os.getenv(
     ),
 )
 
+DATABASE_MAX_ATTEMPTS = int(
+    os.getenv("DATABASE_MAX_ATTEMPTS", "3")
+)
+DATABASE_INITIAL_BACKOFF_SECONDS = float(
+    os.getenv("DATABASE_INITIAL_BACKOFF_SECONDS", "0.2")
+)
+
 # Esta variable solo se utiliza para ampliar intencionalmente
 # la ventana de concurrencia durante la demostración.
 #
@@ -62,6 +69,30 @@ RACE_DELAY_MS = int(
 
 class InventoryRequest(BaseModel):
     event_id: int = Field(gt=0)
+
+
+def connect_database():
+    """Conecta a PostgreSQL con reintentos limitados y backoff."""
+
+    for attempt in range(1, DATABASE_MAX_ATTEMPTS + 1):
+        try:
+            return psycopg.connect(
+                DATABASE_URL,
+                connect_timeout=2,
+            )
+        except psycopg.OperationalError:
+            if attempt >= DATABASE_MAX_ATTEMPTS:
+                raise
+            backoff = DATABASE_INITIAL_BACKOFF_SECONDS * (
+                2 ** (attempt - 1)
+            )
+            logging.warning(
+                "database_retry attempt=%s/%s backoff_seconds=%.2f",
+                attempt,
+                DATABASE_MAX_ATTEMPTS,
+                backoff,
+            )
+            time.sleep(backoff)
 
 
 # ============================================================
@@ -123,9 +154,7 @@ def atomic_reservation_status():
 @app.get("/inventory/{event_id}")
 def get_inventory(event_id: int):
     try:
-        with psycopg.connect(
-            DATABASE_URL
-        ) as connection:
+        with connect_database() as connection:
 
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -203,9 +232,7 @@ def reserve_seat(
     )
 
     try:
-        with psycopg.connect(
-            DATABASE_URL
-        ) as connection:
+        with connect_database() as connection:
 
             with connection.cursor() as cursor:
 
@@ -388,9 +415,7 @@ def release_seat(
     )
 
     try:
-        with psycopg.connect(
-            DATABASE_URL
-        ) as connection:
+        with connect_database() as connection:
 
             with connection.cursor() as cursor:
                 cursor.execute(
