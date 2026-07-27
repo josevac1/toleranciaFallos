@@ -209,7 +209,7 @@ Desde la raíz del proyecto:
 
 ```powershell
 docker build -t tickets-gateway:1.0.0 .\gateway
-docker build -t tickets-reservations:1.0.0 .\reservations
+docker build -t tickets-reservations:1.2.0 .\reservations
 docker build -t tickets-inventory:1.0.0 .\inventory
 docker build -t tickets-payments:1.0.0 .\payments
 docker build -t tickets-notifications:1.0.0 .\notifications
@@ -227,7 +227,7 @@ docker images --format "{{.Repository}}:{{.Tag}}" | findstr "tickets-"
 
 ```powershell
 minikube image load tickets-gateway:1.0.0 -p tickets-cluster --daemon
-minikube image load tickets-reservations:1.0.0 -p tickets-cluster --daemon
+minikube image load tickets-reservations:1.2.0 -p tickets-cluster --daemon
 minikube image load tickets-inventory:1.0.0 -p tickets-cluster --daemon
 minikube image load tickets-payments:1.0.0 -p tickets-cluster --daemon
 minikube image load tickets-notifications:1.0.0 -p tickets-cluster --daemon
