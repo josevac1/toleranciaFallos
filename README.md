@@ -932,10 +932,11 @@ kubectl apply -f .\chaos\03-carga-k6.yaml
 .\chaos\04-base-datos-intermitente.ps1 -Accion activar
 ```
 
-### Capturas pendientes de los fallos 3 y 4
+### Evidencias de los fallos 3 y 4
 
-Para completar la evidencia de la Parte III, tomar una captura después de
-ejecutar cada bloque y guardarla con el nombre sugerido.
+Las capturas documentan el estado anterior, la inyección del fallo, la
+respuesta controlada y la recuperación. Los comandos permiten repetir los
+experimentos.
 
 **Fallo 3 — Diluvio de Peticiones**
 
@@ -1004,6 +1005,41 @@ Invoke-RestMethod http://127.0.0.1:18000/api/inventory/1
 ```
 
 Nombre sugerido: `evidencias/parte3-m4-postgresql-recuperado.png`.
+
+<details>
+<summary><strong>Galería de evidencias de los fallos 3 y 4</strong></summary>
+
+<br>
+
+#### Fallo 3: estado inicial del Gateway y HPA
+
+![Gateway y HPA antes de la carga](evidencias/parte3-m3-gateway-hpa-antes.png)
+
+#### Fallo 3: resultados de k6
+
+![Resultados del pico de carga ejecutado con k6](evidencias/parte3-m3-resultados-k6.png)
+
+#### Fallo 3: protección y escalado
+
+![Configuración de protección, HPA y réplicas del Gateway](evidencias/parte3-m3-proteccion-y-hpa.png)
+
+#### Fallo 4: PostgreSQL antes del fallo
+
+![PostgreSQL y EndpointSlice disponibles antes del fallo](evidencias/parte3-m4-postgresql-antes.png)
+
+#### Fallo 4: Service sin endpoints
+
+![PostgreSQL encendido con su Service sin endpoints](evidencias/parte3-m4-postgresql-sin-endpoints.png)
+
+#### Fallo 4: respuesta controlada
+
+![Respuesta 503 controlada durante la intermitencia](evidencias/parte3-m4-reintentos-controlados.png)
+
+#### Fallo 4: PostgreSQL recuperado
+
+![Service restaurado, endpoint disponible e inventario accesible](evidencias/parte3-m4-postgresql-recuperado.png)
+
+</details>
 
 
 ## Conclusión
